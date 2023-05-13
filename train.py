@@ -49,7 +49,7 @@ def load_checkpoint(checkpoint_path, model, optimizer):
           checkpoint_path, iteration))
     return model, optimizer, iteration
 
-def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
+def save_checkpoint(model, optimizer, learning_rate, iteration, loss_values, filepath):
     print("Saving model and optimizer state at iteration {} to {}".format(
           iteration, filepath))
     model_for_saving = WaveGlow(**waveglow_config).cuda()
@@ -57,7 +57,8 @@ def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
     torch.save({'model': model_for_saving,
                 'iteration': iteration,
                 'optimizer': optimizer.state_dict(),
-                'learning_rate': learning_rate}, filepath)
+                'learning_rate': learning_rate,
+                'loss_values': loss_values}, filepath)
 
 def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
           sigma, iters_per_checkpoint, batch_size, seed, fp16_run,
@@ -124,6 +125,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             audio = torch.autograd.Variable(audio.cuda())
             outputs = model((mel, audio))
 
+            loss_values = []
+            
             loss = criterion(outputs)
             if num_gpus > 1:
                 reduced_loss = reduce_tensor(loss.data, num_gpus).item()
@@ -141,12 +144,13 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             print("{}:\t{:.9f}".format(iteration, reduced_loss))
             if with_tensorboard and rank == 0:
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
+            loss_values.append(reduced_loss)  # Append loss value to the list
 
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
                     checkpoint_path = "{}/waveglow_{}".format(
                         output_directory, iteration)
-                    save_checkpoint(model, optimizer, learning_rate, iteration,
+                    save_checkpoint(model, optimizer, learning_rate, iteration, loss_values
                                     checkpoint_path)
 
             iteration += 1
