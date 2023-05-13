@@ -1,4 +1,4 @@
-path = "~/jhl/deepvoice/multi-Speaker-tacotron-tensorflow/datasets/kss/audio/"
+path = "/home/usergpu/jhl/deepvoice/multi-Speaker-tacotron-tensorflow/datasets/kss/audio/"
 
 with open("splitted_kss.txt", "r", encoding="UTF-8") as f:
 	lines = f.readlines()
