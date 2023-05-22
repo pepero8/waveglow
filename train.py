@@ -115,6 +115,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     model.train()
     epoch_offset = max(0, int(iteration / len(train_loader)))
     # ================ MAIN TRAINNIG LOOP! ===================
+    loss_values = []
     for epoch in range(epoch_offset, epochs):
         print("Epoch: {}".format(epoch))
         for i, batch in enumerate(train_loader):
@@ -124,8 +125,6 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             mel = torch.autograd.Variable(mel.cuda())
             audio = torch.autograd.Variable(audio.cuda())
             outputs = model((mel, audio))
-
-            loss_values = []
             
             loss = criterion(outputs)
             if num_gpus > 1:
